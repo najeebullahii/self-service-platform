@@ -43,6 +43,8 @@ spec:
       input:
         url: ./skeleton
         targetPath: ./app
+        copyWithoutRender:
+          - .github/workflows/*
         values:
           name: ${{ parameters.name }}
           description: ${{ parameters.description }}
