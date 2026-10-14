@@ -1,0 +1,55 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: storagebucket-aws
+spec:
+  compositeTypeRef:
+    apiVersion: platform.example.org/v1alpha1
+    kind: StorageBucket
+  mode: Pipeline
+  pipeline:
+    - step: render-aws-resources
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{- $xr := .observed.composite.resource }}
+            {{- $bucket := printf "platform-%s-%s" $xr.metadata.name (trunc 6 $xr.metadata.uid) }}
+            ---
+            apiVersion: s3.aws.m.upbound.io/v1beta1
+            kind: Bucket
+            metadata:
+              name: {{ $bucket }}
+              namespace: {{ $xr.metadata.namespace }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: bucket
+            spec:
+              forProvider:
+                region: us-east-1
+                tags:
+                  team: {{ $xr.spec.team | quote }}
+                  managed-by: platform
+            ---
+            apiVersion: s3.aws.m.upbound.io/v1beta1
+            kind: BucketPublicAccessBlock
+            metadata:
+              name: {{ $bucket }}
+              namespace: {{ $xr.metadata.namespace }}
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: public-access-block
+            spec:
+              forProvider:
+                region: us-east-1
+                bucketRef:
+                  name: {{ $bucket }}
+                blockPublicAcls: true
+                blockPublicPolicy: true
+                ignorePublicAcls: true
+                restrictPublicBuckets: true
+    - step: detect-ready
+      functionRef:
+        name: function-auto-ready

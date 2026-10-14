@@ -1,0 +1,7 @@
+apiVersion: platform.example.org/v1alpha1
+kind: StorageBucket
+metadata:
+  namespace: default
+  name: orders
+spec:
+  team: payments
