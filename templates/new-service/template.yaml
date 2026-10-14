@@ -1,0 +1,97 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: new-service
+  title: New service with storage
+  description: Creates a GitHub repository with a starter app and asks the platform for a storage bucket.
+  tags:
+    - aws
+    - storage
+spec:
+  owner: user:default/najeebullahii
+  type: service
+
+  parameters:
+    - title: About the service
+      required:
+        - name
+        - team
+      properties:
+        name:
+          title: Service name
+          type: string
+          description: Lowercase letters, numbers and dashes. It becomes the repository name and the storage request name.
+          pattern: '^[a-z][a-z0-9-]{2,30}$'
+          ui:autofocus: true
+        description:
+          title: What does it do?
+          type: string
+          default: A new service
+        team:
+          title: Owning team
+          type: string
+          description: The team that owns the storage. It is used to tag the bucket.
+          enum:
+            - payments
+            - orders
+            - platform
+
+  steps:
+    - id: fetch-app
+      name: Create the starter app
+      action: fetch:template
+      input:
+        url: ./skeleton
+        targetPath: ./app
+        values:
+          name: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+          owner: najeebullahii
+
+    - id: fetch-request
+      name: Prepare the storage request
+      action: fetch:template
+      input:
+        url: ./request
+        targetPath: ./request
+        values:
+          name: ${{ parameters.name }}
+          team: ${{ parameters.team }}
+
+    - id: publish
+      name: Create the GitHub repository
+      action: publish:github
+      input:
+        repoUrl: github.com?owner=najeebullahii&repo=${{ parameters.name }}
+        description: ${{ parameters.description }}
+        sourcePath: ./app
+        defaultBranch: main
+        repoVisibility: public
+
+    - id: request-storage
+      name: Ask the platform for storage
+      action: publish:github:pull-request
+      input:
+        repoUrl: github.com?owner=najeebullahii&repo=platform-gitops
+        branchName: request-${{ parameters.name }}
+        title: Storage request for ${{ parameters.name }}
+        description: Requested through the portal for team ${{ parameters.team }}. Merging this adds the request, and the platform then creates the bucket.
+        sourcePath: ./request
+        targetPath: requests
+
+    - id: register
+      name: Add the service to the catalog
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: /catalog-info.yaml
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Storage request (pull request)
+        url: ${{ steps['request-storage'].output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}
