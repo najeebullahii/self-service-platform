@@ -3,6 +3,8 @@ name: CI
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -10,7 +12,7 @@ permissions:
 
 jobs:
   build-scan-sign:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
@@ -58,11 +60,13 @@ jobs:
           path: sbom.json
 
       - name: Log in to the GitHub registry
+        if: github.event_name != 'pull_request'
         env:
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: echo "$REGISTRY_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
       - name: Push the image
+        if: github.event_name != 'pull_request'
         id: push-image
         run: |
           docker tag app:${{ github.sha }} $IMAGE:${{ github.sha }}
@@ -71,12 +75,15 @@ jobs:
           echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
 
       - name: Install Cosign
+        if: github.event_name != 'pull_request'
         uses: sigstore/cosign-installer@v4.1.0
 
       - name: Sign the image (keyless)
+        if: github.event_name != 'pull_request'
         run: cosign sign --yes ${{ steps.push-image.outputs.digest }}
 
       - name: Verify the signature
+        if: github.event_name != 'pull_request'
         run: |
           cosign verify \
             --certificate-identity="https://github.com/${{ github.repository }}/.github/workflows/ci.yml@refs/heads/main" \
