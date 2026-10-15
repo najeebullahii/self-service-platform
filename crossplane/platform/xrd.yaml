@@ -21,6 +21,7 @@ spec:
               properties:
                 team:
                   type: string
+                  enum: [payments, orders, platform]
                   description: The team that owns this storage. Used for tagging.
               required:
                 - team
