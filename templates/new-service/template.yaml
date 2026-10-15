@@ -69,6 +69,8 @@ spec:
         sourcePath: ./app
         defaultBranch: main
         repoVisibility: public
+        requiredStatusCheckContexts: ['build-scan-sign']
+        requiredApprovingReviewCount: 0
 
     - id: request-storage
       name: Ask the platform for storage
