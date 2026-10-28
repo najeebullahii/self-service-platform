@@ -2,7 +2,7 @@
 
 A small platform that runs on a laptop. A developer fills in one form and gets a new GitHub repository with a build pipeline already in place, plus a storage bucket in AWS. Nobody writes cloud configuration by hand.
 
-This is the third project in a series. The first was a self-healing Kubernetes system. The second was a supply chain security pipeline (scan, build, sign, verify). This one puts the second project's pipeline inside a template, so every new service gets it without anyone having to remember to add it.
+This is the third project in a series. The first was a supply chain security pipeline (scan, build, sign, verify). The second was a self-healing Kubernetes system. This one puts the first project's pipeline inside a template, so every new service gets it without anyone having to remember to add it.
 
 ## How it works
 
